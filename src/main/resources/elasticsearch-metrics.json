@@ -1,0 +1,43 @@
+{
+  "mappings": {
+    "device": {
+      "_all": {"enabled": false},
+      "_source": {"enabled": false},
+      "properties": {
+        "deviceId" : {"type": "string"},
+        "timestamp" : {"type": "long"},
+        "inputPowerLimitW" : {"type": "double", "index": "no", "doc_values": true},
+        "inputPowerW" : {"type": "double", "index": "no", "doc_values": true},
+        "inputCurrentA" : {"type": "double", "index": "no", "doc_values": true},
+        "inputVoltageV" : {"type": "double", "index": "no", "doc_values": true},
+        "battPowerOutW" : {"type": "double", "index": "no", "doc_values": true},
+        "battCurrentA" : {"type": "double", "index": "no", "doc_values": true},
+        "battVoltageV" : {"type": "double", "index": "no", "doc_values": true},
+        "battTempC" : {"type": "double", "index": "no", "doc_values": true},
+        "battSocWh" : {"type": "double", "index": "no", "doc_values": true},
+        "battSocProp" : {"type": "double", "index": "no", "doc_values": true},
+        "outputPowerW" : {"type": "double", "index": "no", "doc_values": true},
+        "outputCurrentA" : {"type": "double", "index": "no", "doc_values": true},
+        "outputVoltageV}" : {"type": "double", "index": "no", "doc_values": true}
+    },
+    "group": {
+      "_all": {"enabled": false},
+      "_source": {"enabled": false},
+      "properties": {
+        "groupId:" : {"type": "string"},
+        "timestamp:" : {"type": "long"},
+        "powerLimitW:" : {"type": "double", "index": "no", "doc_values": true},
+        "inputPowerW:" : {"type": "double", "index": "no", "doc_values": true},
+        "outputPowerW:" : {"type": "double", "index": "no", "doc_values": true},
+        "battDischargePowerW:" : {"type": "double", "index": "no", "doc_values": true},
+        "battChargePowerW:" : {"type": "double", "index": "no", "doc_values": true},
+        "battSocWh:" : {"type": "double", "index": "no", "doc_values": true},
+        "battSocPropAvg:" : {"type": "double", "index": "no", "doc_values": true},
+        "battLowestSocUpsTime:" : {"type": "double", "index": "no", "doc_values": true},
+        "numBlocksCharging:" : {"type": "long", "index": "no", "doc_values": true},
+        "numBlocksDischarging:" : {"type":"long", "index": "no", "doc_values": true}
+      }
+    }
+    }
+  }
+}
