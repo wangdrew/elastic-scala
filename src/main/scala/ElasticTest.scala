@@ -129,8 +129,8 @@ class ElasticAdapter(host: String) {
             Seq(termQuery("deviceId", deviceId.toString),
               rangeQuery("timestamp") from startTs to endTs))
         )
-    }.await(queryTimeout)   // Do not block in real code
-    val ret = resp.as[DeviceMetric]   // Handle failures
+    }.await(queryTimeout)   // FIXME: Do not block in real code
+    val ret = resp.as[DeviceMetric]   // FIXME: Handle failures
     ret
   }
 
@@ -142,8 +142,8 @@ class ElasticAdapter(host: String) {
             Seq(termQuery("groupId", groupId.toString),
               rangeQuery("timestamp") from startTs to endTs))
         )
-    }.await(queryTimeout)   // Do not block in real code
-    val ret = resp.as[GroupMetric] // Handle failures
+    }.await(queryTimeout)   // FIXME: Do not block in real code
+    val ret = resp.as[GroupMetric] // FIXME: Handle failures
     ret
   }
 }
