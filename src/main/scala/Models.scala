@@ -1,5 +1,6 @@
 import java.util.UUID
 
+import com.sksamuel.elastic4s.{RichSearchHit, HitAs}
 import com.sksamuel.elastic4s.source.DocumentMap
 
 import scala.concurrent.duration.FiniteDuration
@@ -106,5 +107,47 @@ object RandomMetricGenerator {
 
   def randomTimestampInLast(d: FiniteDuration) = {
     System.currentTimeMillis() - scala.math.round(nextDouble() * d.toMillis)
+  }
+}
+
+object ElasticAdapterConversions {
+
+  implicit object DeviceMetricAs extends HitAs[DeviceMetric] {
+    override def as(hit: RichSearchHit): DeviceMetric = {
+      new DeviceMetric(
+        UUID.fromString(hit.sourceAsMap("deviceId").toString),
+        hit.sourceAsMap("timestamp").toString.toLong,
+        hit.sourceAsMap("inputPowerLimitW").toString.toDouble,
+        hit.sourceAsMap("inputPowerW").toString.toDouble,
+        hit.sourceAsMap("inputCurrentA").toString.toDouble,
+        hit.sourceAsMap("inputVoltageV").toString.toDouble,
+        hit.sourceAsMap("battPowerOutW").toString.toDouble,
+        hit.sourceAsMap("battCurrentA").toString.toDouble,
+        hit.sourceAsMap("battVoltageV").toString.toDouble,
+        hit.sourceAsMap("battTempC").toString.toDouble,
+        hit.sourceAsMap("battSocWh").toString.toDouble,
+        hit.sourceAsMap("battSocProp").toString.toDouble,
+        hit.sourceAsMap("outputPowerW").toString.toDouble,
+        hit.sourceAsMap("outputCurrentA").toString.toDouble,
+        hit.sourceAsMap("outputVoltageV").toString.toDouble)
+    }
+  }
+
+  implicit object GroupMetricAs extends HitAs[GroupMetric] {
+    override def as(hit: RichSearchHit): GroupMetric = {
+      new GroupMetric(
+        UUID.fromString(hit.sourceAsMap("groupId").toString),
+        hit.sourceAsMap("timestamp").toString.toLong,
+        hit.sourceAsMap("powerLimitW").toString.toDouble,
+        hit.sourceAsMap("inputPowerW").toString.toDouble,
+        hit.sourceAsMap("outputPowerW").toString.toDouble,
+        hit.sourceAsMap("battDischargePowerW").toString.toDouble,
+        hit.sourceAsMap("battChargePowerW").toString.toDouble,
+        hit.sourceAsMap("battSocWh").toString.toDouble,
+        hit.sourceAsMap("battSocPropAvg").toString.toDouble,
+        hit.sourceAsMap("battLowestSocUpsTime").toString.toDouble,
+        hit.sourceAsMap("numBlocksCharging").toString.toLong,
+        hit.sourceAsMap("numBlocksDischarging").toString.toLong)
+    }
   }
 }

@@ -4,18 +4,22 @@
 
 import java.util.UUID
 
-import com.sksamuel.elastic4s.{ElasticsearchClientUri, ElasticClient}
+import com.sksamuel.elastic4s.analyzers.KeywordAnalyzer
+import com.sksamuel.elastic4s.{IndexResult, RichSearchHit, ElasticsearchClientUri, ElasticClient}
 import org.elasticsearch.common.settings.Settings
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldType._
 
 import RandomMetricGenerator._
+import ElasticAdapterConversions._
+
 import scala.concurrent.duration._
+
 
 object ElasticTest extends App {
   val host = "127.0.0.1"
   val elastic = new ElasticAdapter(host)
-  val devId = UUID.fromString("5203869e-3c38-413b-889c-af9b7721bea3")
+  val devId = UUID.fromString("5203869e-3c38-413b-889c-af9b7721bea4")
   val groupId = UUID.fromString("7d136a6c-a6ad-4c8c-9513-f32e5b145224")
   val numMetrics = 10
 
@@ -31,21 +35,27 @@ object ElasticTest extends App {
     }
   }
 
+  Thread.sleep(3000l)
   val currTs = System.currentTimeMillis()
-//  println(elastic.queryDeviceMetric(devId, currTs - 60000l, currTs))
 
+  // Query device metrics across a 30s timewindow
+  println(elastic.queryDeviceMetric(devId, currTs - 60000l, currTs))
 
-  }
+  // Query group metrics across a 30s timewindow
+  println(elastic.queryGroupMetric(groupId, currTs - 60000l, currTs))
+
+}
+
 
 class ElasticAdapter(host: String) {
 
-  val settings = Settings.settingsBuilder().put("http.enabled", true)
-    .put("path.home", "/Users/andrewwang/elasticsearch").build()
-  val client = ElasticClient.local(settings)
+//  val settings = Settings.settingsBuilder().put("http.enabled", true)
+//    .put("path.home", "/Users/andrewwang/elasticsearch").build()
+//  val client = ElasticClient.local(settings)
+  val settings = Settings.settingsBuilder().put("cluster.name", "elasticsearch").build()
+  val client = ElasticClient.transport(settings, s"elasticsearch://${host}:9300")
 
-//  val settings = Settings.settingsBuilder().put("cluster.name", "elasticsearch").build()
-//  val client = ElasticClient.transport(settings, s"elasticsearch://${host}:9300")
-
+  val queryTimeout = 5.seconds
   val groupIndex = "group"
   val deviceIndex = "device"
   val groupDocument = "GroupMetric"
@@ -57,7 +67,7 @@ class ElasticAdapter(host: String) {
         deviceDocument all false,
         deviceDocument source false,
         deviceDocument fields(
-          "deviceId" typed StringType,
+          "deviceId" typed StringType analyzer KeywordAnalyzer store true includeInAll true,
           "timestamp" typed LongType,
           "inputPowerLimitW" typed DoubleType index "no" docValuesFormat true,
           "inputPowerW" typed DoubleType index "no" docValuesFormat true,
@@ -82,7 +92,7 @@ class ElasticAdapter(host: String) {
         groupDocument all false,
         groupDocument source false,
         groupDocument fields(
-          "groupId" typed StringType,
+          "groupId" typed StringType analyzer KeywordAnalyzer store true includeInAll true,
           "timestamp" typed LongType,
           "powerLimitW" typed StringType index "no" docValuesFormat true,
           "inputPowerW" typed StringType index "no" docValuesFormat true,
@@ -99,7 +109,6 @@ class ElasticAdapter(host: String) {
     }
   }
 
-  // put mapping
   def writeGroupMetric(g: GroupMetric): Unit = {
     client.execute {
       index into groupIndex -> groupDocument doc g
@@ -107,16 +116,34 @@ class ElasticAdapter(host: String) {
   }
 
   def writeDeviceMetric(d: DeviceMetric): Unit = {
-    client.execute {
+    val respFuture = client.execute {
       index into deviceIndex -> deviceDocument doc d
     }
   }
 
-  def queryDeviceMetric(deviceId: UUID, startTs: Long, endTs: Long) = {
-    client.execute {
-      search in deviceIndex -> deviceDocument query deviceId.toString aggregations(
-        aggregation range "timestamp" range(startTs, endTs)
+  def queryDeviceMetric(deviceId: UUID, startTs: Long, endTs: Long): Seq[DeviceMetric]= {
+    val resp = client.execute {
+      search in deviceIndex -> deviceDocument query
+        bool(
+          must(
+            Seq(termQuery("deviceId", deviceId.toString),
+              rangeQuery("timestamp") from startTs to endTs))
         )
-    }
+    }.await(queryTimeout)   // Do not block in real code
+    val ret = resp.as[DeviceMetric]   // Handle failures
+    ret
+  }
+
+  def queryGroupMetric(groupId: UUID, startTs: Long, endTs: Long): Seq[GroupMetric]= {
+    val resp = client.execute {
+      search in groupIndex -> groupDocument query
+        bool(
+          must(
+            Seq(termQuery("groupId", groupId.toString),
+              rangeQuery("timestamp") from startTs to endTs))
+        )
+    }.await(queryTimeout)   // Do not block in real code
+    val ret = resp.as[GroupMetric] // Handle failures
+    ret
   }
 }
